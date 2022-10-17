@@ -21,4 +21,16 @@ const isLoggedIn = BigPromise(async (req, res, next) => {
   }
 });
 
-module.exports = isLoggedIn;
+const customRole = (...roles) => {
+  return BigPromise(async (req, res, next) => {
+    const user = await User.findById({ _id: req.userId });
+    if (!roles.includes(user.role)) {
+      return next(
+        new CustomError("You are not authorized to access this resource", 402)
+      );
+    }
+    next();
+  });
+};
+
+module.exports = { isLoggedIn, customRole };

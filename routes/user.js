@@ -10,8 +10,9 @@ const {
   getIsLoggedInUserDetails,
   updatePassword,
   updateUserDetails,
+  adminAllUser,
 } = require("../controllers/userControllers");
-const isLoggedIn = require("../middlewares/user");
+const { isLoggedIn, customRole } = require("../middlewares/user");
 
 router.route("/signup").post(signup);
 router.route("/login").post(login);
@@ -21,6 +22,8 @@ router.route("/password/reset/:token").post(resetPassword);
 router.route("/userdashboard").get(isLoggedIn, getIsLoggedInUserDetails);
 router.route("/password/update").post(isLoggedIn, updatePassword);
 router.route("/userdashboard/update").post(isLoggedIn, updateUserDetails);
+
+router.route("/admin/users").get(isLoggedIn, customRole("admin"), adminAllUser);
 
 module.exports = router;
 
