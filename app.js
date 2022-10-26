@@ -37,10 +37,5 @@ const user = require("./routes/user");
 app.use("/api/v1", home);
 app.use("/api/v1", user);
 
-// signup test route
-app.get("/api/v1/signuptestform", (req, res) => {
-  res.render("signuptest");
-});
-
 // export app js
 module.exports = app;
