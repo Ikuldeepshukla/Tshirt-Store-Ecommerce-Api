@@ -59,3 +59,29 @@ exports.getAllProduct = BigPromise(async (req, res, next) => {
     totalProductCount,
   });
 });
+
+exports.adminGetAllProduct = BigPromise(async (req, res, next) => {
+  const products = await Product.find({});
+
+  if (!products) {
+    return next(new CustomError("No Products Found", 404));
+  }
+
+  res.status(200).json({
+    succes: true,
+    products,
+  });
+});
+
+exports.getOneProduct = BigPromise(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    return next(new CustomError("No Product Found", 404));
+  }
+
+  res.status(200).json({
+    succes: true,
+    product,
+  });
+});
