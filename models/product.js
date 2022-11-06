@@ -1,5 +1,4 @@
-const { default: mongoose } = require("mongoose");
-const mongooe = require("mongoose");
+const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -80,10 +79,7 @@ const productSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: {
-      type: Date,
-      default: Date.now,
-    },
+    default: Date.now,
   },
 });
 

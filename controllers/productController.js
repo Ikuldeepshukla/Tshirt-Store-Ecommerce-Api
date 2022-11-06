@@ -13,17 +13,18 @@ exports.addProduct = BigPromise(async (req, res, next) => {
   }
 
   if (req.files) {
-    for (let index = 0; index < req.files.length; index++) {
+    for (let index = 0; index < req.files.photos.length; index++) {
       let result = await cloudinary.v2.uploader.upload(
         req.files.photos[index].tempFilePath,
         { folder: "products" }
       );
+      console.log(result);
       imagesArray.push({ id: result.public_id, secure_url: result.secure_url });
     }
   }
 
   req.body.photos = imagesArray;
-  req.body.user = req.user.id;
+  req.body.user = req.userId;
 
   const product = await Product.create(req.body);
 
@@ -38,15 +39,18 @@ exports.getAllProduct = BigPromise(async (req, res, next) => {
 
   const totalProductCount = await Product.countDocuments();
 
-  const products = new WhereClause(Product.find(), req.query).search().filter();
+  const productsObj = new WhereClause(Product.find(), req.query)
+    .search()
+    .filter();
 
+  let products = await productsObj.base;
   const filteredProductNumber = products.length;
 
   // products.limit().skip();
 
-  products.pager(resultPerPage);
+  productsObj.pager(resultPerPage);
 
-  products = await products.base;
+  products = await productsObj.base.clone();
 
   res.status(200).json({
     success: true,
