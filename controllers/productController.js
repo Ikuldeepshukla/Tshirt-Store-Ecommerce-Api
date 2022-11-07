@@ -60,6 +60,20 @@ exports.getAllProduct = BigPromise(async (req, res, next) => {
   });
 });
 
+exports.getOneProduct = BigPromise(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    return next(new CustomError("No Product Found", 404));
+  }
+
+  res.status(200).json({
+    succes: true,
+    product,
+  });
+});
+
+// admin only controllers
 exports.adminGetAllProduct = BigPromise(async (req, res, next) => {
   const products = await Product.find({});
 
@@ -73,15 +87,59 @@ exports.adminGetAllProduct = BigPromise(async (req, res, next) => {
   });
 });
 
-exports.getOneProduct = BigPromise(async (req, res, next) => {
+exports.adminUpdateOneProduct = BigPromise(async (req, res, next) => {
+  let product = await Product.findById(req.params.id);
+
+  if (!product) {
+    return next(new CustomError("No product found with thius Id", 404));
+  }
+
+  let imagesArray = [];
+  if (req.files) {
+    // destroy the existing images
+    for (let index = 0; index < product.photos.length; index++) {
+      await cloudinary.v2.uploader.destroy(product.photos[index].id);
+    }
+    // upload and save the images
+    for (let index = 0; index < req.files.photos.length; index++) {
+      let result = await cloudinary.v2.uploader.upload(
+        req.files.photos[index].tempFilePath,
+        { folder: "products" } // folder name can be put into env file
+      );
+      imagesArray.push({ id: result.public_id, secure_url: result.secure_url });
+    }
+    req.body.photos = imagesArray;
+  }
+
+  product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false,
+  });
+
+  res.status(200).json({
+    success: true,
+    product,
+  });
+});
+
+exports.adminDeleteOneProduct = BigPromise(async (req, res, next) => {
   const product = await Product.findById(req.params.id);
 
   if (!product) {
-    return next(new CustomError("No Product Found", 404));
+    return next(new CustomError("Product not found", 404));
   }
+
+  // destroy the existing images
+  for (let index = 0; index < product.photos.length; index++) {
+    await cloudinary.v2.uploader.destroy(product.photos[index].id);
+  }
+
+  // remove the product
+  await product.remove();
 
   res.status(200).json({
     succes: true,
-    product,
+    message: "Product is deleted successfully",
   });
 });
