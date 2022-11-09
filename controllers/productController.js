@@ -3,6 +3,7 @@ const CustomError = require("../utils/customError");
 const BigPromise = require("../middlewares/bigPromise");
 const cloudinary = require("cloudinary");
 const WhereClause = require("../utils/whereClause");
+const User = require("../models/user");
 
 exports.addProduct = BigPromise(async (req, res, next) => {
   // images
@@ -141,5 +142,55 @@ exports.adminDeleteOneProduct = BigPromise(async (req, res, next) => {
   res.status(200).json({
     succes: true,
     message: "Product is deleted successfully",
+  });
+});
+
+exports.addReview = BigPromise(async (req, res, next) => {
+  const { rating, comment, productId } = req.body;
+
+  // get user details from database
+  const user = await User.findById(req.userId);
+
+  // prepare review object
+  const review = {
+    user: user._id,
+    name: user.name,
+    rating: Number(rating),
+    comment: comment,
+  };
+
+  // get product
+  const product = await Product.findById(productId);
+
+  // check if already reviewed
+  const alreadyReviewed = product.reviews.find(
+    (rev) => rev.user.toString() === req.userId.toString()
+  );
+
+  if (alreadyReviewed) {
+    // if already reviewed then update the review
+    product.reviews.forEach((rev) => {
+      if (rev.user.toString() === req.userId.toString()) {
+        rev.comment = comment;
+        rev.rating = rating;
+      }
+    });
+  } else {
+    // else add a new review
+    product.reviews.push(review);
+    product.numberOfReviews = product.reviews.length;
+  }
+
+  // adjust ratings
+  product.ratings =
+    product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+    product.reviews.length;
+
+  // save product
+  await product.save({ validateBeforeSave: false });
+
+  // send response
+  res.status(200).json({
+    success: true,
   });
 });
