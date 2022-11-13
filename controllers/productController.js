@@ -74,6 +74,101 @@ exports.getOneProduct = BigPromise(async (req, res, next) => {
   });
 });
 
+exports.addReview = BigPromise(async (req, res, next) => {
+  const { rating, comment, productId } = req.body;
+
+  // get user details from database
+  const user = await User.findById(req.userId);
+
+  // prepare review object
+  const review = {
+    user: user._id,
+    name: user.name,
+    rating: Number(rating),
+    comment: comment,
+  };
+
+  // get product
+  const product = await Product.findById(productId);
+
+  // check if already reviewed
+  const alreadyReviewed = product.reviews.find(
+    (rev) => rev.user.toString() === req.userId.toString()
+  );
+
+  if (alreadyReviewed) {
+    // if already reviewed then update the review
+    product.reviews.forEach((rev) => {
+      if (rev.user.toString() === req.userId.toString()) {
+        rev.comment = comment;
+        rev.rating = rating;
+      }
+    });
+  } else {
+    // else add a new review
+    product.reviews.push(review);
+    product.numberOfReviews = product.reviews.length;
+  }
+
+  // adjust ratings
+  product.ratings =
+    product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+    product.reviews.length;
+
+  // save product
+  await product.save({ validateBeforeSave: false });
+
+  // send response
+  res.status(200).json({
+    success: true,
+  });
+});
+
+exports.deleteReview = BigPromise(async (req, res, next) => {
+  const { productId } = req.query;
+
+  const product = await Product.findById(productId);
+
+  const reviews = product.reviews.filter(
+    (rev) => rev.user.toString() === req.user._id.toString()
+  );
+
+  const numberOfReviews = reviews.length;
+
+  // adjust rating
+  product.ratings =
+    product.reviews.redyce((acc, item) => item.rating + acc, 0) /
+    product.reviews.length;
+
+  // update the product
+  await Product.findByIdAndUpdate(
+    productId,
+    {
+      reviews,
+      ratings,
+      numberOfReviews,
+    },
+    {
+      new: true,
+      runValidators: true,
+      userFindAndModify: false,
+    }
+  );
+
+  res.status(200).json({
+    success: true,
+  });
+});
+
+exports.getOnlyReviewsForOneProduct = BigPromise(async (req, res, next) => {
+  const product = await Product.findById(req.query.id);
+
+  res.status(200).json({
+    success: true,
+    reviews: product.reviews,
+  });
+});
+
 // admin only controllers
 exports.adminGetAllProduct = BigPromise(async (req, res, next) => {
   const products = await Product.find({});
@@ -142,55 +237,5 @@ exports.adminDeleteOneProduct = BigPromise(async (req, res, next) => {
   res.status(200).json({
     succes: true,
     message: "Product is deleted successfully",
-  });
-});
-
-exports.addReview = BigPromise(async (req, res, next) => {
-  const { rating, comment, productId } = req.body;
-
-  // get user details from database
-  const user = await User.findById(req.userId);
-
-  // prepare review object
-  const review = {
-    user: user._id,
-    name: user.name,
-    rating: Number(rating),
-    comment: comment,
-  };
-
-  // get product
-  const product = await Product.findById(productId);
-
-  // check if already reviewed
-  const alreadyReviewed = product.reviews.find(
-    (rev) => rev.user.toString() === req.userId.toString()
-  );
-
-  if (alreadyReviewed) {
-    // if already reviewed then update the review
-    product.reviews.forEach((rev) => {
-      if (rev.user.toString() === req.userId.toString()) {
-        rev.comment = comment;
-        rev.rating = rating;
-      }
-    });
-  } else {
-    // else add a new review
-    product.reviews.push(review);
-    product.numberOfReviews = product.reviews.length;
-  }
-
-  // adjust ratings
-  product.ratings =
-    product.reviews.reduce((acc, item) => item.rating + acc, 0) /
-    product.reviews.length;
-
-  // save product
-  await product.save({ validateBeforeSave: false });
-
-  // send response
-  res.status(200).json({
-    success: true,
   });
 });
