@@ -44,7 +44,7 @@ exports.captureRazorpayPayment = BigPromise(async (req, res, next) => {
     receipt: await nanoid(10),
   };
 
-  const myOrder = await instance.orders.create(Options);
+  const myOrder = await instance.orders.create(options);
 
   res.status(200).json({
     success: true,
