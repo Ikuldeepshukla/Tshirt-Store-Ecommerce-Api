@@ -79,13 +79,27 @@ exports.adminUpdateOrder = BigPromise(async (req, res, next) => {
   order.orderStatus = req.body.orderStatus;
 
   order.orderItem.forEach(async (prod) => {
-    await updateProductStock(prod.product, prod.quantity)
+    await updateProductStock(prod.product, prod.quantity);
   });
-  
+
   await order.save();
   res.status(200).json({
     success: true,
     order,
+  });
+});
+
+exports.adminDeleteOrder = BigPromise(async (req, res, next) => {
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    return next(new CustomError("No such order exist", 401));
+  }
+
+  await order.remove();
+
+  res.status(200).json({
+    success: true
   });
 });
 
